@@ -7,13 +7,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: 'https://tfg-web-vr-client.vercel.app/', 
+        origin: 'https://tfg-web-vr-client.vercel.app', 
         methods: ['GET', 'POST']
     }
 });
 
 app.use(cors({
-    origin: 'https://tfg-web-vr-client.vercel.app/'
+    origin: 'https://tfg-web-vr-client.vercel.app'
 }));
 
 // Example API endpoint
