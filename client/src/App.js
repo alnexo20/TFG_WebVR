@@ -6,6 +6,8 @@ import "./App.css";
 import { Canvas } from "@react-three/fiber";
 import socket from "./socket-client";
 
+import axios from 'axios';
+
 function Floor() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -73,8 +75,18 @@ function Button(props) {
 
 export default function App() {
   const [color, setColor] = useState(0x123456);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
+    // Make an API request to the server
+    axios.get('https://tfg-web-vr-server.vercel.app/api/some-endpoint')
+    .then(response => {
+        setMessage(response.data.message);
+    })
+    .catch(error => {
+        console.error('Error fetching data from server:', error);
+    });
+
     // Handle incoming color updates
     socket.on("color", (newColor) => {
       setColor(newColor);
