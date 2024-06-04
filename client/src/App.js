@@ -27,13 +27,23 @@ function Box({ color, size, scale, children, ...rest }) {
 
 function Button(props) {
   const [hover, setHover] = useState(false);
-  const [color, setColor] = useState(0x123456);
 
   const onSelect = () => {
     const newColor = (Math.random() * 0xffffff) | 0;
-    setColor(newColor);
-    socket.emit("newColor", newColor);
+    socket.emit("changeColor", newColor);
   };
+
+  useEffect(() => {
+    // Handle incoming color updates
+    socket.on("color", (newColor) => {
+      props.setColor(newColor);
+    });
+
+    // Clean up the effect
+    return () => {
+      socket.off("color");
+    };
+  }, [props.setColor]);
 
   return (
     <Interactive
@@ -42,7 +52,7 @@ function Button(props) {
       onBlur={() => setHover(false)}
     >
       <Box
-        color={color}
+        color={props.color}
         scale={hover ? [1.5, 1.5, 1.5] : [1, 1, 1]}
         size={[0.4, 0.1, 0.1]}
         {...props}
@@ -54,7 +64,7 @@ function Button(props) {
           anchorX="center"
           anchorY="middle"
         >
-          Simple Button Color Sync
+          Color Sync
         </Text>
       </Box>
     </Interactive>
@@ -62,8 +72,7 @@ function Button(props) {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [color, setColor] = useState(0x123456);
 
   useEffect(() => {
     // Handle incoming color updates
@@ -77,14 +86,6 @@ export default function App() {
     };
   }, []);
 
-  const sendMessage = () => {
-    if (input.trim()) {
-      // Send message to the server
-      socket.emit("message", input);
-      setInput("");
-    }
-  };
-
   return (
     <>
       <VRButton />
@@ -95,7 +96,7 @@ export default function App() {
           <ambientLight />
           <pointLight position={[10, 10, 10]} />
           <Controllers />
-          <Button position={[0, 0.8, -1]} />
+          <Button position={[0, 0.8, -1]} color={color} setColor={setColor} />
         </XR>
       </Canvas>
     </>
