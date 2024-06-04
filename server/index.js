@@ -9,17 +9,19 @@ const io = socketIo(server);
 // Serve static files from the React app
 app.use(express.static('build'));
 
+let currentColor = '#FFFFFF'; // Initial color
+
 io.on('connection', (socket) => {
     console.log('New client connected');
 
-    // Send a message to the client
-    socket.emit('message', 'Welcome to the game!');
+    // Send the current color to the new client
+    socket.emit('color', currentColor);
 
-    // Handle messages from the client
-    socket.on('message', (msg) => {
-        console.log('Message from client:', msg);
-        // Broadcast the message to all clients
-        io.emit('message', msg);
+    // Handle color change requests
+    socket.on('changeColor', (color) => {
+        currentColor = color;
+        // Broadcast the new color to all clients
+        io.emit('color', currentColor);
     });
 
     // Handle client disconnection

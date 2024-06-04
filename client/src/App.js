@@ -66,14 +66,14 @@ export default function App() {
   const [input, setInput] = useState("");
 
   useEffect(() => {
-    // Handle incoming messages
-    socket.on("message", (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+    // Handle incoming color updates
+    socket.on("color", (newColor) => {
+      setColor(newColor);
     });
 
     // Clean up the effect
     return () => {
-      socket.off("message");
+      socket.off("color");
     };
   }, []);
 
