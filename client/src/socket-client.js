@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const socket = io('https://brief-husky-nymphea.glitch.me', {
+const socket = io('https://tfg-web-vr-server.glitch.me', {
   extraHeaders: {
     "user-agent": "Mozilla",
   },
