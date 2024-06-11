@@ -28,18 +28,18 @@ let currentColor = '#FFFFFF'; // Initial color
 // Track client metrics
 const clientMetrics = {};
 
-// Function to write metrics to a file
-const writeMetricsToFile = () => {
+// Function to append metrics to a file
+const appendMetricsToFile = () => {
     const metrics = Object.entries(clientMetrics).map(([clientId, metrics]) => {
         return `Client ${clientId} metrics: ${JSON.stringify(metrics)}`;
-    }).join('\n');
+    }).join('\n') + '\n'; // Ensure each write ends with a newline
 
     const filePath = path.join(__dirname, 'stats.txt');
-    fs.writeFile(filePath, metrics, (err) => {
+    fs.appendFile(filePath, metrics, (err) => {
         if (err) {
-            console.error('Error writing to file:', err);
+            console.error('Error appending to file:', err);
         } else {
-            console.log('Metrics written to stats.txt');
+            console.log('Metrics appended to stats.txt');
         }
     });
 };
@@ -49,10 +49,11 @@ io.on('connection', (socket) => {
 
     // Initialize metrics for the new client
     clientMetrics[socket.id] = {
-        latency: 0,
+        totalLatency: 0,
         packetLoss: 0,
         packetsSent: 0,
         packetsReceived: 0,
+        totalPings: 0,
         lastPingTimestamp: null
     };
 
@@ -75,7 +76,9 @@ io.on('connection', (socket) => {
         const lastPingTimestamp = clientMetrics[socket.id].lastPingTimestamp;
         if (lastPingTimestamp) {
             const latency = now - lastPingTimestamp;
-            clientMetrics[socket.id].latency = latency;
+            clientMetrics[socket.id].totalLatency += latency;
+            clientMetrics[socket.id].totalPings++;
+            console.log(`Latency for client ${socket.id}: ${latency}ms`); // Log latency
         }
     });
 
@@ -93,15 +96,22 @@ io.on('connection', (socket) => {
 
     setInterval(sendPacket, 1000); // Send a packet every second
 
-    // Calculate packet loss
+    // Calculate packet loss and average latency
     setInterval(() => {
-        const { packetsSent, packetsReceived } = clientMetrics[socket.id];
-        const packetLoss = ((packetsSent - packetsReceived) / packetsSent) * 100;
+        const { packetsSent, packetsReceived, totalLatency, totalPings } = clientMetrics[socket.id];
+        const packetLoss = packetsSent > 0 ? ((packetsSent - packetsReceived) / packetsSent) * 100 : 0;
+        const averageLatency = totalPings > 0 ? totalLatency / totalPings : 0;
         clientMetrics[socket.id].packetLoss = packetLoss;
-    }, 5000); // Calculate packet loss every 5 seconds
+        clientMetrics[socket.id].averageLatency = averageLatency;
+        console.log(`Average latency for client ${socket.id}: ${averageLatency}ms`); // Log average latency
+        console.log(`Packet loss for client ${socket.id}: ${packetLoss}%`); // Log packet loss
+    }, 5000); // Calculate packet loss and average latency every 5 seconds
 
-    // Write metrics to file
-    setInterval(writeMetricsToFile, 5000); // Write metrics to file every 5 seconds
+    // Append metrics to file
+    setInterval(() => {
+        console.log('Appending metrics to file...');
+        appendMetricsToFile();
+    }, 5000); // Append metrics to file every 5 seconds
 
     // Handle client disconnection
     socket.on('disconnect', () => {

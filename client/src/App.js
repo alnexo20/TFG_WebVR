@@ -93,19 +93,22 @@ export default function App() {
       setColor(newColor);
     });
 
-    // Handle latency measurement
-    setInterval(() => {
-      socket.emit("ping");
-    }, 5000); // Ping every 5 seconds
+    // Handle the ping event from the server
+    socket.on('ping', () => {
+      console.log('Ping received from server');
+      socket.emit('pong');
+  });
 
-    // Handle packet tracking
-    socket.on("packet", (packet) => {
-      socket.emit("packetReceived", packet.id);
-    });
+  // Handle packet event
+  socket.on('packet', (packet) => {
+      console.log('Packet received:', packet);
+      socket.emit('packetReceived');
+  });
 
     // Clean up the effect
     return () => {
       socket.off("color");
+      socket.off('ping');
       socket.off('packet');
     };
   }, []);
