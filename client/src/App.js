@@ -6,7 +6,7 @@ import "./App.css";
 import { Canvas } from "@react-three/fiber";
 import socket from "./socket-client";
 
-import axios from 'axios';
+import axios from "axios";
 
 function Floor() {
   return (
@@ -75,26 +75,38 @@ function Button(props) {
 
 export default function App() {
   const [color, setColor] = useState(0x123456);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     // Make an API request to the server
-    axios.get('https://tfg-web-vr-server.vercel.app/api/some-endpoint')
-    .then(response => {
+    axios
+      .get("https://tfg-web-vr-server.vercel.app/api/some-endpoint")
+      .then((response) => {
         setMessage(response.data.message);
-    })
-    .catch(error => {
-        console.error('Error fetching data from server:', error);
-    });
+      })
+      .catch((error) => {
+        console.error("Error fetching data from server:", error);
+      });
 
     // Handle incoming color updates
     socket.on("color", (newColor) => {
       setColor(newColor);
     });
 
+    // Handle latency measurement
+    setInterval(() => {
+      socket.emit("ping");
+    }, 5000); // Ping every 5 seconds
+
+    // Handle packet tracking
+    socket.on("packet", (packet) => {
+      socket.emit("packetReceived", packet.id);
+    });
+
     // Clean up the effect
     return () => {
       socket.off("color");
+      socket.off('packet');
     };
   }, []);
 
