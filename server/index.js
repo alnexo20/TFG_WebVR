@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +27,22 @@ let currentColor = '#FFFFFF'; // Initial color
 
 // Track client metrics
 const clientMetrics = {};
+
+// Function to write metrics to a file
+const writeMetricsToFile = () => {
+    const metrics = Object.entries(clientMetrics).map(([clientId, metrics]) => {
+        return `Client ${clientId} metrics: ${JSON.stringify(metrics)}`;
+    }).join('\n');
+
+    const filePath = path.join(__dirname, 'stats.txt');
+    fs.writeFile(filePath, metrics, (err) => {
+        if (err) {
+            console.error('Error writing to file:', err);
+        } else {
+            console.log('Metrics written to stats.txt');
+        }
+    });
+};
 
 io.on('connection', (socket) => {
     console.log('New client connected');
@@ -82,10 +100,8 @@ io.on('connection', (socket) => {
         clientMetrics[socket.id].packetLoss = packetLoss;
     }, 5000); // Calculate packet loss every 5 seconds
 
-    // Print metrics
-    setInterval(() => {
-        console.log(`Client ${socket.id} metrics:`, clientMetrics[socket.id]);
-    }, 5000); // Print metrics every 5 seconds
+    // Write metrics to file
+    setInterval(writeMetricsToFile, 5000); // Write metrics to file every 5 seconds
 
     // Handle client disconnection
     socket.on('disconnect', () => {
