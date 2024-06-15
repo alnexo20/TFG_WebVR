@@ -35,7 +35,7 @@ const appendMetricsToFile = () => {
     }).join('\n') + '\n'; // Ensure each write ends with a newline
 
     const filePath = path.join(__dirname, 'stats.txt');
-    fs.appendFile(filePath, metrics, (err) => {
+    fs.writeFile(filePath, metrics, (err) => {
         if (err) {
             console.error('Error appending to file:', err);
         } else {
@@ -45,7 +45,7 @@ const appendMetricsToFile = () => {
 };
 
 io.on('connection', (socket) => {
-    console.log('New client connected');
+    console.log('New client connected:', socket.id);
 
     // Initialize metrics for the new client
     clientMetrics[socket.id] = {
@@ -54,7 +54,11 @@ io.on('connection', (socket) => {
         packetsSent: 0,
         packetsReceived: 0,
         totalPings: 0,
-        lastPingTimestamp: null
+        lastPingTimestamp: null,
+        lastLatency: null,
+        totalJitter: 0,
+        jitterMeasurements: 0,
+        instantaneousLatency: null
     };
 
     // Send the current color to the new client
@@ -66,19 +70,34 @@ io.on('connection', (socket) => {
         io.emit('color', currentColor);
     });
 
-    // Measure latency
-    socket.on('ping', () => {
+    // Measure latency and jitter
+    const sendPing = () => {
+        socket.emit('ping');
         clientMetrics[socket.id].lastPingTimestamp = Date.now();
-    });
+        console.log(`Ping sent to client ${socket.id}`);
+    };
 
     socket.on('pong', () => {
         const now = Date.now();
         const lastPingTimestamp = clientMetrics[socket.id].lastPingTimestamp;
         if (lastPingTimestamp) {
             const latency = now - lastPingTimestamp;
+            const lastLatency = clientMetrics[socket.id].lastLatency;
             clientMetrics[socket.id].totalLatency += latency;
             clientMetrics[socket.id].totalPings++;
-            console.log(`Latency for client ${socket.id}: ${latency}ms`); // Log latency
+            clientMetrics[socket.id].instantaneousLatency = latency;
+
+            if (lastLatency !== null) {
+                const jitter = Math.abs(latency - lastLatency);
+                clientMetrics[socket.id].totalJitter += jitter;
+                clientMetrics[socket.id].jitterMeasurements++;
+                console.log(`Jitter for client ${socket.id}: ${jitter}ms`); // Log jitter
+            }
+
+            clientMetrics[socket.id].lastLatency = latency;
+            console.log(`Pong received from client ${socket.id}, Latency: ${latency}ms`); // Log latency
+        } else {
+            console.log(`No lastPingTimestamp for client ${socket.id}`);
         }
     });
 
@@ -95,17 +114,21 @@ io.on('connection', (socket) => {
     };
 
     setInterval(sendPacket, 1000); // Send a packet every second
+    setInterval(sendPing, 5000); // Send a ping every 5 seconds
 
-    // Calculate packet loss and average latency
+    // Calculate packet loss, average latency, and average jitter
     setInterval(() => {
-        const { packetsSent, packetsReceived, totalLatency, totalPings } = clientMetrics[socket.id];
+        const { packetsSent, packetsReceived, totalLatency, totalPings, totalJitter, jitterMeasurements } = clientMetrics[socket.id];
         const packetLoss = packetsSent > 0 ? ((packetsSent - packetsReceived) / packetsSent) * 100 : 0;
         const averageLatency = totalPings > 0 ? totalLatency / totalPings : 0;
+        const averageJitter = jitterMeasurements > 0 ? totalJitter / jitterMeasurements : 0;
         clientMetrics[socket.id].packetLoss = packetLoss;
         clientMetrics[socket.id].averageLatency = averageLatency;
+        clientMetrics[socket.id].averageJitter = averageJitter;
         console.log(`Average latency for client ${socket.id}: ${averageLatency}ms`); // Log average latency
         console.log(`Packet loss for client ${socket.id}: ${packetLoss}%`); // Log packet loss
-    }, 5000); // Calculate packet loss and average latency every 5 seconds
+        console.log(`Average jitter for client ${socket.id}: ${averageJitter}ms`); // Log average jitter
+    }, 5000); // Calculate packet loss, average latency, and average jitter every 5 seconds
 
     // Append metrics to file
     setInterval(() => {
@@ -115,7 +138,7 @@ io.on('connection', (socket) => {
 
     // Handle client disconnection
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        console.log('Client disconnected:', socket.id);
         delete clientMetrics[socket.id];
     });
 });
