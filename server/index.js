@@ -18,11 +18,6 @@ app.use(cors({
     origin: 'https://tfg-web-vr-client.vercel.app'
 }));
 
-// Example API endpoint
-app.get('/api/some-endpoint', (req, res) => {
-    res.send({ message: 'Hello from server!' });
-});
-
 let currentColor = '#FFFFFF'; // Initial color
 
 // Track client metrics

@@ -79,15 +79,6 @@ export default function App() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    // Make an API request to the server
-    axios
-      .get("https://tfg-web-vr-server.vercel.app/api/some-endpoint")
-      .then((response) => {
-        setMessage(response.data.message);
-      })
-      .catch((error) => {
-        console.error("Error fetching data from server:", error);
-      });
 
     // Handle incoming color updates
     socket.on("color", (newColor) => {
