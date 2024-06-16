@@ -32,6 +32,7 @@ function Button(props) {
 
   const onSelect = () => {
     const newColor = (Math.random() * 0xffffff) | 0;
+    props.setColor(newColor);
     socket.emit("changeColor", newColor);
   };
 
