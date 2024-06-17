@@ -86,16 +86,17 @@ export default function App() {
     });
 
     // Handle the ping event from the server
-    socket.on('ping', () => {
+    socket.on('ping', ({ pingSendTime }) => {
       console.log('Ping received from server');
-      socket.emit('pong');
-  });
+      const pingReceiveTime = Date.now();
+      socket.emit('pong', { pingSendTime, pingReceiveTime });
+    });
 
-  // Handle packet event
-  socket.on('packet', (packet) => {
-      console.log('Packet received:', packet);
-      socket.emit('packetReceived');
-  });
+    // Handle packet event
+    socket.on('packet', (packet) => {
+        console.log('Packet received:', packet);
+        socket.emit('packetReceived');
+    });
 
     // Clean up the effect
     return () => {
