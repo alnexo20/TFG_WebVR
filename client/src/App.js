@@ -89,7 +89,7 @@ export default function App() {
     socket.on('ping', ({ pingSendTime }) => {
       console.log('Ping received from server');
       const pingReceiveTime = Date.now();
-      socket.emit('pong', { pingReceiveTime });
+      socket.emit('pong', { pingSendTime, pingReceiveTime });
   });
 
     // Handle packet event
